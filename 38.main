@@ -1,0 +1,67 @@
+#include <iostream>
+#include <cmath>
+#include <vector>
+#include <iomanip>
+
+using namespace std;
+
+// AP结构体
+struct AP {
+    int x, y;          // 坐标
+    int band;          // 0:2.4G 1:5G
+    int channel;       // 信道
+    double power;      // 发射功率dBm
+};
+
+// 计算自由空间损耗
+double calcLoss(double d, bool is5G) {
+    if (is5G) {
+        return 20 * log10(d) + 20 * log10(5000) - 27.55;
+    } else {
+        return 20 * log10(d) + 20 * log10(2400) - 27.55;
+    }
+}
+
+// 墙体衰减
+int wallLoss(char wallType) {
+    switch (wallType) {
+        case 'B': return 12; // 承重墙
+        case 'N': return 6;  // 普通墙
+        case 'G': return 7;  // 玻璃
+        default: return 0;
+    }
+}
+
+// 计算某点接收功率
+double recvPower(AP ap, int x, int y, char wall) {
+    double d = hypot(ap.x - x, ap.y - y);
+    double loss = calcLoss(d, ap.band == 1);
+    loss += wallLoss(wall);
+    return ap.power - loss;
+}
+
+int main() {
+    vector<AP> aps = {
+        {15, 40, 0, 1, 20},
+        {30, 40, 1, 36, 20},
+        {45, 40, 0, 6, 20},
+        {60, 40, 1, 40, 20},
+        {75, 40, 0, 11, 20},
+        {90, 40, 1, 44, 20}
+    };
+
+    cout << "教学楼AP部署与信号覆盖模拟\n";
+    cout << "------------------------------------\n";
+
+    // 测试教室(20,45)，普通墙
+    int testX = 20, testY = 45;
+    char wall = 'N';
+
+    for (int i = 0; i < aps.size(); i++) {
+        double p = recvPower(aps[i], testX, testY, wall);
+        cout << "AP" << i+1 << " 信号: " 
+             << fixed << setprecision(1) << p << " dBm\n";
+    }
+
+    return 0;
+}
