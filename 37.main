@@ -1,0 +1,68 @@
+#include <iostream>
+#include <unordered_map>
+using namespace std;
+
+// 网桥类：实现自学习和帧转发
+class Bridge {
+private:
+    // MAC地址表：key=MAC地址(4位)，value=所在端口(1/2)
+    unordered_map<int, int> macTable;
+
+public:
+    // 处理数据帧：源MAC，源端口，目的MAC
+    void processFrame(int srcMac, int srcPort, int dstMac) {
+        // 1. 自学习：将源MAC和源端口写入地址表
+        macTable[srcMac] = srcPort;
+        cout << "接收帧：源MAC=0x" << hex << srcMac 
+             << "，源端口=" << dec << srcPort 
+             << "，目的MAC=0x" << hex << dstMac << endl;
+
+        // 2. 确定目的端口
+        int dstPort;
+        if (dstMac == 0xF) { // 目的为广播地址
+            dstPort = -1; // 标记为广播
+            cout << "转发方式：广播（从网段1和2转发）" << endl;
+        } else {
+            // 查询MAC地址表
+            auto it = macTable.find(dstMac);
+            if (it != macTable.end()) {
+                dstPort = it->second; // 找到对应端口
+                cout << "转发端口：" << dstPort << endl;
+            } else {
+                dstPort = 0; // 未找到，泛洪
+                cout << "转发方式：泛洪（从所有其他端口转发）" << endl;
+            }
+        }
+
+        // 3. 输出当前MAC地址表
+        printMacTable();
+        cout << "-------------------------" << endl;
+    }
+
+    // 打印MAC地址表
+    void printMacTable() {
+        cout << "当前MAC地址表：" << endl;
+        for (auto& pair : macTable) {
+            cout << "MAC=0x" << hex << pair.first 
+                 << "  ->  端口=" << dec << pair.second << endl;
+        }
+    }
+};
+
+int main() {
+    Bridge bridge;
+    int n; // 帧数量
+    cout << "请输入帧的数量：";
+    cin >> n;
+    cout << "-------------------------" << endl;
+
+    // 逐帧处理
+    for (int i = 0; i < n; i++) {
+        int srcMac, srcPort, dstMac;
+        cout << "请输入第" << i+1 << "帧（源MAC 源端口 目的MAC）：";
+        cin >> srcMac >> srcPort >> dstMac;
+        bridge.processFrame(srcMac, srcPort, dstMac);
+    }
+
+    return 0;
+}
